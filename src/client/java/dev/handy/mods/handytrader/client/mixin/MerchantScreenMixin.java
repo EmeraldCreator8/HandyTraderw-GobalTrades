@@ -16,6 +16,8 @@ import net.minecraft.world.item.trading.MerchantOffers;
 import dev.handy.mods.handytrader.client.TradeFavorites;
 import dev.handy.mods.handytrader.client.TradeHash;
 import dev.handy.mods.handytrader.config.HandyTraderConfig;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -214,33 +216,37 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
 	}
 
 	/**
-	 * Intercept postButtonClick to remap the trade index in the server-bound packet
-	 * from sorted order back to the server's original order.
+	 * Remap the trade index in the server-bound select-trade packet from sorted
+	 * order back to the server's original order.
 	 *
-	 * We replace the entire method rather than using @ModifyArg because the
-	 * @ModifyArg on ServerboundSelectTradePacket.<init> doesn't fire at runtime
-	 * (likely a Mixin/mapping issue with constructor argument modification).
+	 * This wraps only the {@code new ServerboundSelectTradePacket(index)} construction
+	 * inside vanilla {@code postButtonClick} via MixinExtras, rather than cancelling the
+	 * whole method. The earlier full-method-replace ({@code @Inject} + {@code ci.cancel()})
+	 * broke compatibility with mods that inject at the TAIL/RETURN of postButtonClick —
+	 * notably Villager Trading Plus (Easier Villager Trading), whose "trade all on click"
+	 * runs at {@code @At("RETURN")} of this method. Cancelling at HEAD meant RETURN was
+	 * never reached, so its one-click bulk trade silently fell back to vanilla behaviour
+	 * (see issue #20).
+	 *
+	 * By only swapping the packet's index we let vanilla run to completion: setSelectionHint
+	 * and tryMoveItems still receive the sorted {@code shopItem} (correct for the reordered
+	 * client offer list), the server receives the original index (correct trade selected),
+	 * and downstream injectors fire normally.
+	 *
+	 * {@code @WrapOperation} is also a non-consuming injector, so other mods can wrap the
+	 * same construction without conflicting. We previously hit a dead {@code @ModifyArg} on
+	 * this same constructor; WrapOperation does not share that failure mode.
 	 */
-	@Inject(method = "postButtonClick()V", at = @At("HEAD"), cancellable = true)
-	private void handytrader$remapPostButtonClick(CallbackInfo ci) {
-		if (handytrader$sortedToActual == null) {
-			// No sorting active — let vanilla handle it unmodified
-			return;
+	@WrapOperation(
+			method = "postButtonClick()V",
+			at = @At(value = "NEW", target = "(I)Lnet/minecraft/network/protocol/game/ServerboundSelectTradePacket;"))
+	private ServerboundSelectTradePacket handytrader$remapSelectTradeIndex(
+			int index, Operation<ServerboundSelectTradePacket> original) {
+		if (handytrader$sortedToActual != null
+				&& index >= 0 && index < handytrader$sortedToActual.length) {
+			index = handytrader$sortedToActual[index];
 		}
-
-		// Do what vanilla postButtonClick does:
-		// 1. setSelectionHint uses sorted index (correct for sorted client offers)
-		this.menu.setSelectionHint(this.shopItem);
-		// 2. tryMoveItems uses sorted index (correct for sorted client offers)
-		this.menu.tryMoveItems(this.shopItem);
-		// 3. Send packet with ACTUAL (original) index so the server selects the right trade
-		int actualIndex = this.shopItem;
-		if (this.shopItem >= 0 && this.shopItem < handytrader$sortedToActual.length) {
-			actualIndex = handytrader$sortedToActual[this.shopItem];
-		}
-		Minecraft.getInstance().getConnection().send(new ServerboundSelectTradePacket(actualIndex));
-
-		ci.cancel();
+		return original.call(index);
 	}
 
 	// -- Render favorites overlay --

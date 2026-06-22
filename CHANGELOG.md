@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.1
+
+- **Fixed a conflict with Villager Trading Plus (Easier Villager Trading).** When a villager had a favorited trade, clicking it fell back to vanilla single-trade instead of that mod's "trade all on click". HandyTrader was cancelling the whole trade-selection method to apply the favorites reorder against the server; that cancellation also swallowed the other mod's hook. The reorder is now applied by remapping only the outgoing trade-select packet, so other trade mods run normally. (#20)
+
 ## 2.2.0
 
 Updated for the **Minecraft 26.2** full release.

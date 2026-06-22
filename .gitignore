@@ -17,3 +17,5 @@ Thumbs.db
 
 # Minecraft
 run/
+
+.tmp/

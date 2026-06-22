@@ -33,6 +33,13 @@ dependencies {
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
+	// MixinExtras is bundled by Fabric Loader at runtime; we only need it on the
+	// compile + annotation-processor classpath to use @WrapOperation. Do NOT `include`
+	// it — that would ship a duplicate copy. The mixin lives in the split `client`
+	// source set, so it must go on the client configurations.
+	clientCompileOnly "io.github.llamalad7:mixinextras-fabric:0.5.4"
+	clientAnnotationProcessor "io.github.llamalad7:mixinextras-fabric:0.5.4"
+
 	// Config screen (YACL) and mod menu integration — both optional at runtime
 	compileOnly("maven.modrinth:yacl:${project.yacl_version}") {
 		exclude(group: "net.fabricmc.fabric-api")
