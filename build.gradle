@@ -53,7 +53,7 @@ dependencies {
 	localRuntime("maven.modrinth:yacl:${project.yacl_version}") {
 		exclude(group: "net.fabricmc.fabric-api")
 	}
-	localRuntime "com.terraformersmc:modmenu:${project.modmenu_version}"
+	// localRuntime "com.terraformersmc:modmenu:${project.modmenu_version}"  // no 26.3 build yet — re-enable when ModMenu ships 26.3
 }
 
 processResources {
