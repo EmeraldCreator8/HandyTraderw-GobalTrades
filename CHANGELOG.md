@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.3.0
+
+### Added
+- **Bulk-trade your favorited trades.** Shift-click a favorited trade to repeat it until you run out of inputs or the villager locks the trade — handy for dumping a chest of crops to a farmer or paper to a librarian without click-spamming. Hover the gold bookmark corner for a reminder of the gesture.
+- **Optional "Bulk-trade all trades" setting** (off by default) extends Shift-click bulk-trading to *every* trade, not just favorites — for when you'd rather not favorite first.
+- New settings for the above, plus a safety limit on how many trades a single Shift-click performs.
+
 ## 2.2.1
 
 - **Fixed a conflict with Villager Trading Plus (Easier Villager Trading).** When a villager had a favorited trade, clicking it fell back to vanilla single-trade instead of that mod's "trade all on click". HandyTrader was cancelling the whole trade-selection method to apply the favorites reorder against the server; that cancellation also swallowed the other mod's hook. The reorder is now applied by remapping only the outgoing trade-select packet, so other trade mods run normally. (#20)
