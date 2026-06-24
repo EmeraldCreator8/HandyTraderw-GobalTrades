@@ -10,7 +10,9 @@ import net.minecraft.network.protocol.game.ServerboundSelectTradePacket;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.MerchantMenu;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.item.trading.MerchantOffers;
 import dev.handy.mods.handytrader.client.TradeFavorites;
@@ -36,6 +38,19 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
 
 	@Shadow private int shopItem;
 	@Shadow int scrollOff;
+
+	/**
+	 * Vanilla's trade-selection routine: sets the selection hint, auto-fills the payment
+	 * slots from the player's inventory via {@code tryMoveItems(shopItem)}, and sends the
+	 * select-trade packet (which our {@link #handytrader$remapSelectTradeIndex} remaps from
+	 * sorted back to server order). Shadowed so the bulk-trade loop can reuse it instead of
+	 * reimplementing selection. Private on {@code MerchantScreen}; the throwing body is a
+	 * placeholder discarded at mixin-apply time.
+	 */
+	@Shadow private void postButtonClick() { throw new AssertionError(); }
+
+	/** Result slot index in {@link MerchantMenu} (PAYMENT1=0, PAYMENT2=1, RESULT=2). */
+	@Unique private static final int RESULT_SLOT = 2;
 	@Unique private UUID handytrader$villagerUUID;
 	@Unique private boolean handytrader$needsSort = true;
 	/** Maps sorted index -> original server index. Null when no reordering active. */
@@ -327,6 +342,23 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
 
 			int buttonY = buttonStartY + i * BUTTON_HEIGHT;
 
+			// Bulk-trade: Shift-click anywhere on a favorited trade's button repeats it
+			// until the inputs run out or the villager locks the trade. Shift takes
+			// priority over the corner toggle so the whole button is the bulk target.
+			if (HandyTraderConfig.get().enableBulkTrade
+					&& event.hasShiftDown()
+					&& mouseX >= buttonX && mouseX < buttonX + BUTTON_WIDTH
+					&& mouseY >= buttonY && mouseY < buttonY + BUTTON_HEIGHT) {
+				MerchantOffer offer = offers.get(offerIndex);
+				String hash = TradeHash.hash(offer);
+				if (TradeFavorites.isFavorite(handytrader$villagerUUID, hash)) {
+					handytrader$bulkTrade(offerIndex);
+					cir.setReturnValue(true);
+					return;
+				}
+			}
+
+			// Bookmark corner (top-left of the button): plain click toggles the favorite.
 			int hitSize = BOOKMARK_SIZE + BOOKMARK_INSET + 1;
 			if (mouseX >= buttonX && mouseX < buttonX + hitSize
 					&& mouseY >= buttonY && mouseY < buttonY + hitSize) {
@@ -344,6 +376,60 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
 				cir.setReturnValue(true);
 				return;
 			}
+		}
+	}
+
+	/**
+	 * Repeat the trade at {@code sortedIndex} (client/sorted order) until the player runs
+	 * out of inputs, the trade goes out of stock, or the configured cap is hit.
+	 *
+	 * Each pass mirrors exactly what a human does — {@link #postButtonClick()} selects the
+	 * trade and auto-fills the payment slots (our {@code @WrapOperation} remaps the outgoing
+	 * index to server order), then a {@code QUICK_MOVE} on the result slot takes the output,
+	 * just like a shift-click. Every step sends the same real packets in order, so the server
+	 * validates each trade — no custom packets, no dupe/loss risk if the client mispredicts.
+	 *
+	 * The bulk loop is modeled on Giselbaer's Easier Villager Trading / Villager Trading Plus
+	 * (MIT licensed).
+	 */
+	@Unique
+	private void handytrader$bulkTrade(int sortedIndex) {
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.player == null) return;
+
+		int max = HandyTraderConfig.get().bulkTradeMax;
+		if (max <= 0) max = 256;
+
+		MerchantOffers offers = this.menu.getOffers();
+		if (sortedIndex >= offers.size()) return;
+		MerchantOffer offer = offers.get(sortedIndex);
+
+		// A trade can only run (maxUses - uses) more times before it locks until the
+		// villager restocks. Cap to that up front so we don't fire clicks the server
+		// will just reject. The client's offer carries the server's use counts.
+		int remainingUses = Math.max(0, offer.getMaxUses() - offer.getUses());
+		int limit = Math.min(max, remainingUses);
+
+		this.shopItem = sortedIndex;
+		Slot resultSlot = this.menu.getSlot(RESULT_SLOT);
+
+		int traded = 0;
+		while (traded < limit) {
+			if (offer.isOutOfStock()) break;
+
+			// Select the trade + auto-fill payment from inventory + notify the server.
+			this.postButtonClick();
+
+			// Payment couldn't be satisfied (inventory exhausted) — nothing left to take.
+			if (!resultSlot.hasItem()) break;
+
+			// Take the trade output exactly like a shift-click on the result slot.
+			this.slotClicked(resultSlot, RESULT_SLOT, 0, ContainerInput.QUICK_MOVE);
+			traded++;
+		}
+
+		if (traded > 0) {
+			mc.player.playSound(SoundEvents.VILLAGER_YES, 0.5F, 1.0F);
 		}
 	}
 }
