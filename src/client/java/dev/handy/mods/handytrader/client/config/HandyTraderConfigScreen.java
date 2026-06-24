@@ -5,6 +5,7 @@ import dev.isxander.yacl3.api.Option;
 import dev.isxander.yacl3.api.OptionDescription;
 import dev.isxander.yacl3.api.YetAnotherConfigLib;
 import dev.isxander.yacl3.api.controller.TickBoxControllerBuilder;
+import dev.isxander.yacl3.api.controller.IntegerSliderControllerBuilder;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.screens.Screen;
@@ -27,6 +28,20 @@ public class HandyTraderConfigScreen {
 										Component.translatable("config.handytrader.enableFavorites.desc")))
 								.binding(true, () -> config.enableFavorites, val -> config.enableFavorites = val)
 								.controller(TickBoxControllerBuilder::create)
+								.build())
+						.option(Option.<Boolean>createBuilder()
+								.name(Component.translatable("config.handytrader.enableBulkTrade"))
+								.description(OptionDescription.of(
+										Component.translatable("config.handytrader.enableBulkTrade.desc")))
+								.binding(true, () -> config.enableBulkTrade, val -> config.enableBulkTrade = val)
+								.controller(TickBoxControllerBuilder::create)
+								.build())
+						.option(Option.<Integer>createBuilder()
+								.name(Component.translatable("config.handytrader.bulkTradeMax"))
+								.description(OptionDescription.of(
+										Component.translatable("config.handytrader.bulkTradeMax.desc")))
+								.binding(256, () -> config.bulkTradeMax, val -> config.bulkTradeMax = val)
+								.controller(opt -> IntegerSliderControllerBuilder.create(opt).range(16, 1024).step(16))
 								.build())
 						.build())
 				.save(HandyTraderConfig::save)
