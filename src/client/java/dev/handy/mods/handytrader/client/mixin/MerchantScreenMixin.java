@@ -342,14 +342,15 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
 					handytrader$villagerUUID, TradeHash.hash(offer));
 
 			List<Component> lines = new ArrayList<>(2);
-			if (isFavorite) {
-				lines.add(Component.translatable("tooltip.handytrader.unfavorite"));
-				if (HandyTraderConfig.get().enableBulkTrade) {
-					lines.add(Component.translatable("tooltip.handytrader.bulkHint")
-							.withStyle(ChatFormatting.GRAY));
-				}
-			} else {
-				lines.add(Component.translatable("tooltip.handytrader.favorite"));
+			lines.add(Component.translatable(isFavorite
+					? "tooltip.handytrader.unfavorite"
+					: "tooltip.handytrader.favorite"));
+			// The shift-click bulk gesture applies to favorites always, and to every
+			// trade when bulkTradeAllTrades is on — hint wherever it's actually usable.
+			if (HandyTraderConfig.get().enableBulkTrade
+					&& (isFavorite || HandyTraderConfig.get().bulkTradeAllTrades)) {
+				lines.add(Component.translatable("tooltip.handytrader.bulkHint")
+						.withStyle(ChatFormatting.GRAY));
 			}
 			guiGraphics.setTooltipForNextFrame(this.font, lines, java.util.Optional.empty(), mouseX, mouseY);
 			return;
@@ -396,16 +397,17 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
 
 			int buttonY = buttonStartY + i * BUTTON_HEIGHT;
 
-			// Bulk-trade: Shift-click anywhere on a favorited trade's button repeats it
-			// until the inputs run out or the villager locks the trade. Shift takes
-			// priority over the corner toggle so the whole button is the bulk target.
+			// Bulk-trade: Shift-click anywhere on a trade's button repeats it until the
+			// inputs run out or the villager locks the trade. Scoped to favorites by
+			// default; bulkTradeAllTrades extends it to every trade. Shift takes priority
+			// over the corner toggle so the whole button is the bulk target.
 			if (HandyTraderConfig.get().enableBulkTrade
 					&& event.hasShiftDown()
 					&& mouseX >= buttonX && mouseX < buttonX + BUTTON_WIDTH
 					&& mouseY >= buttonY && mouseY < buttonY + BUTTON_HEIGHT) {
 				MerchantOffer offer = offers.get(offerIndex);
-				String hash = TradeHash.hash(offer);
-				if (TradeFavorites.isFavorite(handytrader$villagerUUID, hash)) {
+				boolean isFav = TradeFavorites.isFavorite(handytrader$villagerUUID, TradeHash.hash(offer));
+				if (isFav || HandyTraderConfig.get().bulkTradeAllTrades) {
 					handytrader$bulkTrade(offerIndex);
 					cir.setReturnValue(true);
 					return;

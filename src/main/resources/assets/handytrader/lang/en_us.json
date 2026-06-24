@@ -6,6 +6,8 @@
 	"config.handytrader.enableFavorites.desc": "Allow marking and highlighting favorite trades on villagers.",
 	"config.handytrader.enableBulkTrade": "Bulk-trade favorites",
 	"config.handytrader.enableBulkTrade.desc": "Shift-click a favorited trade to repeat it until you run out of items or the villager locks the trade.",
+	"config.handytrader.bulkTradeAllTrades": "Bulk-trade all trades",
+	"config.handytrader.bulkTradeAllTrades.desc": "Allow Shift-click bulk-trading on any trade, not just favorited ones. Off by default so it stays out of the way of mods like Villager Trading Plus.",
 	"config.handytrader.bulkTradeMax": "Bulk-trade limit",
 	"config.handytrader.bulkTradeMax.desc": "Maximum number of trades a single Shift-click performs (safety cap). The trade's own stock usually stops it sooner.",
 	"tooltip.handytrader.favorite": "Click to favorite this trade",
