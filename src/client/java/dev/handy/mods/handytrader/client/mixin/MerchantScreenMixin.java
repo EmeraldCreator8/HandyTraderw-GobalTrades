@@ -1,5 +1,6 @@
 package dev.handy.mods.handytrader.client.mixin;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -299,6 +300,59 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
 			} else if (isCornerHovered) {
 				handytrader$drawBookmarkCorner(guiGraphics, cornerX, cornerY, EMPTY_HOVER);
 			}
+		}
+	}
+
+	// -- Bookmark-corner hover tooltip (discoverability) --
+
+	/**
+	 * Show a hint when the cursor is over our bookmark corner: what a click does, and — for
+	 * favorites — the otherwise-invisible shift-click bulk-trade gesture.
+	 *
+	 * This runs at {@code @At("HEAD")}, before vanilla sets the trade button's item tooltip.
+	 * The tooltip slot is first-wins (it ignores later writers unless forced), so setting ours
+	 * here both wins on the corner and leaves vanilla's trade-info tooltip intact everywhere
+	 * else on the button (where we don't set anything).
+	 */
+	@Inject(method = "extractContents(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIF)V", at = @At("HEAD"))
+	private void handytrader$cornerTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY,
+										   float partialTick, CallbackInfo ci) {
+		if (handytrader$villagerUUID == null) return;
+		if (!HandyTraderConfig.get().enableFavorites) return;
+
+		MerchantOffers offers = this.menu.getOffers();
+		if (offers.isEmpty()) return;
+
+		int buttonX = this.leftPos + BUTTON_X_OFFSET;
+		int buttonStartY = this.topPos + BUTTON_Y_OFFSET;
+		int hitSize = BOOKMARK_SIZE + BOOKMARK_INSET + 1;
+
+		for (int i = 0; i < VISIBLE_BUTTONS; i++) {
+			int offerIndex = i + this.scrollOff;
+			if (offerIndex >= offers.size()) break;
+
+			int buttonY = buttonStartY + i * BUTTON_HEIGHT;
+			if (mouseX < buttonX || mouseX >= buttonX + hitSize
+					|| mouseY < buttonY || mouseY >= buttonY + hitSize) {
+				continue;
+			}
+
+			MerchantOffer offer = offers.get(offerIndex);
+			boolean isFavorite = TradeFavorites.isFavorite(
+					handytrader$villagerUUID, TradeHash.hash(offer));
+
+			List<Component> lines = new ArrayList<>(2);
+			if (isFavorite) {
+				lines.add(Component.translatable("tooltip.handytrader.unfavorite"));
+				if (HandyTraderConfig.get().enableBulkTrade) {
+					lines.add(Component.translatable("tooltip.handytrader.bulkHint")
+							.withStyle(ChatFormatting.GRAY));
+				}
+			} else {
+				lines.add(Component.translatable("tooltip.handytrader.favorite"));
+			}
+			guiGraphics.setTooltipForNextFrame(this.font, lines, java.util.Optional.empty(), mouseX, mouseY);
+			return;
 		}
 	}
 
