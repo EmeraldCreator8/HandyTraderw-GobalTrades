@@ -25,6 +25,8 @@ public final class HandyTraderConfig {
 	@SerialEntry public boolean enableFavorites = true;
 	/** Shift-click a favorited trade to repeat it until inputs run out or the trade locks. */
 	@SerialEntry public boolean enableBulkTrade = true;
+	/** Extend Shift-click bulk-trading to every trade, not just favorited ones. */
+	@SerialEntry public boolean bulkTradeAllTrades = false;
 	/** Safety ceiling on how many trades a single bulk action performs. */
 	@SerialEntry public int bulkTradeMax = 256;
 

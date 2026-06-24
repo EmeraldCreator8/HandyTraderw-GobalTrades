@@ -36,6 +36,13 @@ public class HandyTraderConfigScreen {
 								.binding(true, () -> config.enableBulkTrade, val -> config.enableBulkTrade = val)
 								.controller(TickBoxControllerBuilder::create)
 								.build())
+						.option(Option.<Boolean>createBuilder()
+								.name(Component.translatable("config.handytrader.bulkTradeAllTrades"))
+								.description(OptionDescription.of(
+										Component.translatable("config.handytrader.bulkTradeAllTrades.desc")))
+								.binding(false, () -> config.bulkTradeAllTrades, val -> config.bulkTradeAllTrades = val)
+								.controller(TickBoxControllerBuilder::create)
+								.build())
 						.option(Option.<Integer>createBuilder()
 								.name(Component.translatable("config.handytrader.bulkTradeMax"))
 								.description(OptionDescription.of(
