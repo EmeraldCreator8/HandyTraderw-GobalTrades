@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.3.0-beta.2
+
+Brings the 2.3.0 bulk-trade feature to the Minecraft 26.3 snapshot line.
+
+- **Bulk-trade your favorited trades** — Shift-click a favorited trade to repeat it until you run out of inputs or the villager locks the trade. Hover the gold bookmark corner for a reminder.
+- **Optional "Bulk-trade all trades" setting** (off by default) extends it to every trade, not just favorites.
+
 ## 2.3.0-beta.1
 
 Preview build for the **Minecraft 26.3** snapshot cycle (tested against 26.3-snapshot-1).
