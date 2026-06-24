@@ -7,5 +7,8 @@
 	"config.handytrader.enableBulkTrade": "Bulk-trade favorites",
 	"config.handytrader.enableBulkTrade.desc": "Shift-click a favorited trade to repeat it until you run out of items or the villager locks the trade.",
 	"config.handytrader.bulkTradeMax": "Bulk-trade limit",
-	"config.handytrader.bulkTradeMax.desc": "Maximum number of trades a single Shift-click performs (safety cap). The trade's own stock usually stops it sooner."
+	"config.handytrader.bulkTradeMax.desc": "Maximum number of trades a single Shift-click performs (safety cap). The trade's own stock usually stops it sooner.",
+	"tooltip.handytrader.favorite": "Click to favorite this trade",
+	"tooltip.handytrader.unfavorite": "Click to unfavorite",
+	"tooltip.handytrader.bulkHint": "Shift-click the trade to trade all"
 }
