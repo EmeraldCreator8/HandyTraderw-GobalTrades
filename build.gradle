@@ -44,16 +44,17 @@ dependencies {
 	compileOnly("maven.modrinth:yacl:${project.yacl_version}") {
 		exclude(group: "net.fabricmc.fabric-api")
 	}
-	compileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+	compileOnly "maven.modrinth:modmenu:${project.modmenu_version}"
 
-	// Dev runtime extras: YACL ships a real 26.2 build (3.9.4+26.2-fabric) so it loads in the
-	// dev client and the config screen is reachable. ModMenu is enabled too; if its current
-	// build doesn't list 26.2 in game_versions, Loader may reject it at runtime — harmless for
-	// the shipped jar since both are compileOnly there.
+	// Dev runtime extras: YACL and ModMenu both ship real 26.3 builds, so the config screen is
+	// reachable in the dev client. ModMenu resolves from the Modrinth maven because its 26.3
+	// build has not been published to maven.terraformersmc.com; it declares
+	// "minecraft": ">=26.3-", so Loader accepts it on any 26.3 snapshot. Both stay compileOnly
+	// in the shipped jar — this only affects dev.
 	localRuntime("maven.modrinth:yacl:${project.yacl_version}") {
 		exclude(group: "net.fabricmc.fabric-api")
 	}
-	// localRuntime "com.terraformersmc:modmenu:${project.modmenu_version}"  // no 26.3 build yet — re-enable when ModMenu ships 26.3
+	localRuntime "maven.modrinth:modmenu:${project.modmenu_version}"
 }
 
 processResources {
