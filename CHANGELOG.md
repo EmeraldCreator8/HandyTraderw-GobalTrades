@@ -2,11 +2,18 @@
 
 ## 2.4.0
 
-Stable release for **Minecraft 26.3**.
+Updated for the **Minecraft 26.3** release.
 
-- Built against Minecraft **26.3**, Fabric Loader **0.19.5**, Fabric API **0.160.6+26.3** and YACL **3.9.6+26.3-fabric**.
-- **Bookmarking trades works again.** Minecraft 26.3 renumbered the mouse buttons with its new input system, so clicks on the bookmark corner were being ignored.
-- **The settings screen is opened through ModMenu** (`21.0.0-beta.1` or newer for 26.3), with YACL installed. Without them the mod runs fine on its saved settings; you just cannot change them in-game.
+- Requires Fabric API for 26.3.
+- Bookmarking trades and Shift-click bulk trading are updated for 26.3's new mouse handling.
+- To change settings in-game, install **ModMenu** and **YACL** (both have 26.3 versions). Without them the mod still works with its saved settings.
+
+## 2.3.0
+
+### Added
+- **Bulk-trade your favorited trades.** Shift-click a favorited trade to repeat it until you run out of inputs or the villager locks the trade — handy for dumping a chest of crops to a farmer or paper to a librarian without click-spamming. Hover the gold bookmark corner for a reminder of the gesture.
+- **Optional "Bulk-trade all trades" setting** (off by default) extends Shift-click bulk-trading to *every* trade, not just favorites — for when you'd rather not favorite first.
+- New settings for the above, plus a safety limit on how many trades a single Shift-click performs.
 
 ## 2.3.0-beta.2
 
