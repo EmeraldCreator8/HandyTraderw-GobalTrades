@@ -1,5 +1,6 @@
 package dev.handy.mods.handytrader.client.mixin;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -383,7 +384,9 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
 											  CallbackInfoReturnable<Boolean> cir) {
 		if (handytrader$villagerUUID == null) return;
 		if (!HandyTraderConfig.get().enableFavorites) return;
-		if (event.button() != 0) return;
+		// Raw mouse button, not the container click button: 26.3's SDL input numbers the left
+		// button 1 (it was 0 under GLFW), so compare against the constant.
+		if (event.button() != InputConstants.MOUSE_BUTTON_LEFT) return;
 
 		double mouseX = event.x();
 		double mouseY = event.y();

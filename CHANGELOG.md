@@ -5,7 +5,7 @@
 Stable release for **Minecraft 26.3**.
 
 - Built against Minecraft **26.3**, Fabric Loader **0.19.5**, Fabric API **0.160.6+26.3** and YACL **3.9.6+26.3-fabric**.
-- No changes were needed to favorites or bulk-trade for 26.3.
+- **Bookmarking trades works again.** Minecraft 26.3 renumbered the mouse buttons with its new input system, so clicks on the bookmark corner were being ignored.
 - **The settings screen is opened through ModMenu** (`21.0.0-beta.1` or newer for 26.3), with YACL installed. Without them the mod runs fine on its saved settings; you just cannot change them in-game.
 
 ## 2.3.0-beta.2
