@@ -126,6 +126,8 @@ tasks.register('curseforge', net.darkhax.curseforgegradle.TaskPublishCurseForge)
 	mainFile.addModLoader('Fabric')
 	mainFile.addGameVersion(project.minecraft_version)
 	mainFile.addJavaVersion('Java 25')
+	// CurseForge rejects uploads without an environment (error 1021).
+	mainFile.addEnvironment('Client')
 	mainFile.addRequirement('fabric-api')
 }
 
