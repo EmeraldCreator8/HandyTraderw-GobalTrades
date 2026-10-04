@@ -23,6 +23,8 @@ public final class HandyTraderConfig {
 	private static HandyTraderConfig INSTANCE;
 
 	@SerialEntry public boolean enableFavorites = true;
+	/** Top-right corner of a trade row toggles a favorite shared by every villager. */
+	@SerialEntry public boolean enableGlobalFavorites = true;
 	/** Shift-click a favorited trade to repeat it until inputs run out or the trade locks. */
 	@SerialEntry public boolean enableBulkTrade = true;
 	/** Extend Shift-click bulk-trading to every trade, not just favorited ones. */

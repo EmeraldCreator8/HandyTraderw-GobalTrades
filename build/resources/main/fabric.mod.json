@@ -1,0 +1,42 @@
+{
+	"schemaVersion": 1,
+	"id": "handytrader",
+	"version": "2.4.0",
+	"name": "Handy Trader",
+	"description": "Star your favorite villager trades. Favorited trades get a gold highlight so you can find them instantly in long trade lists.",
+	"authors": [
+		"D.Fox"
+	],
+	"contact": {
+		"homepage": "https://github.com/dfox288/HandyTrader",
+		"sources": "https://github.com/dfox288/HandyTrader",
+		"issues": "https://github.com/dfox288/HandyTrader/issues"
+	},
+	"license": "MIT",
+	"icon": "assets/handytrader/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"dev.handy.mods.handytrader.client.HandyTraderClient"
+		],
+		"modmenu": [
+			"dev.handy.mods.handytrader.client.config.ModMenuIntegration"
+		]
+	},
+	"mixins": [
+		{
+			"config": "handytrader.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.19.2",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"modmenu": ">=18.0.0",
+		"yet_another_config_lib_v3": "*"
+	}
+}

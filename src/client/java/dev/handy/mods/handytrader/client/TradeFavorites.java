@@ -23,6 +23,9 @@ import java.util.concurrent.Executors;
  * Persisted as JSON at config/handytrader-favorites.json.
  *
  * Structure: { "<villager-uuid>": { "favorites": ["<trade-hash>", ...] } }
+ *
+ * Global favorites (shared by every villager) live in a separate file,
+ * config/handytrader-global-favorites.json, as a flat array of trade hashes.
  */
 @Environment(EnvType.CLIENT)
 public final class TradeFavorites {
@@ -34,7 +37,10 @@ public final class TradeFavorites {
 	// Read once on first load so user favorites carry over; safe to remove after a few releases.
 	private static final Path LEGACY_FAVORITES_PATH = FabricLoader.getInstance()
 			.getConfigDir().resolve("handytraders-favorites.json");
+	private static final Path GLOBAL_FAVORITES_PATH = FabricLoader.getInstance()
+			.getConfigDir().resolve("handytrader-global-favorites.json");
 	private static final Type DATA_TYPE = new TypeToken<Map<String, VillagerData>>() {}.getType();
+	private static final Type GLOBAL_TYPE = new TypeToken<Set<String>>() {}.getType();
 	private static final ExecutorService SAVE_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
 		Thread t = new Thread(r, "HandyTrader-favorites-save");
 		t.setDaemon(true);
@@ -42,6 +48,7 @@ public final class TradeFavorites {
 	});
 
 	private static Map<String, VillagerData> data = new HashMap<>();
+	private static Set<String> globalFavorites = new HashSet<>();
 
 	private TradeFavorites() {}
 
@@ -77,7 +84,21 @@ public final class TradeFavorites {
 		}
 	}
 
+	// -- Global favorites (apply to every villager) --
+
+	public static boolean isGlobalFavorite(String tradeHash) {
+		return globalFavorites.contains(tradeHash);
+	}
+
+	public static void toggleGlobalFavorite(String tradeHash) {
+		if (!globalFavorites.remove(tradeHash)) {
+			globalFavorites.add(tradeHash);
+		}
+	}
+
 	public static void load() {
+		loadGlobal();
+
 		if (!Files.exists(FAVORITES_PATH) && Files.exists(LEGACY_FAVORITES_PATH)) {
 			try {
 				Files.copy(LEGACY_FAVORITES_PATH, FAVORITES_PATH);
@@ -105,6 +126,33 @@ public final class TradeFavorites {
 		} else {
 			HandyTrader.LOGGER.info("No favorites file at {}", FAVORITES_PATH);
 		}
+	}
+
+	private static void loadGlobal() {
+		if (!Files.exists(GLOBAL_FAVORITES_PATH)) return;
+		try (Reader reader = Files.newBufferedReader(GLOBAL_FAVORITES_PATH)) {
+			Set<String> loaded = GSON.fromJson(reader, GLOBAL_TYPE);
+			if (loaded != null) {
+				globalFavorites = new HashSet<>(loaded);
+				HandyTrader.LOGGER.info("Loaded {} global favorites from {}",
+						globalFavorites.size(), GLOBAL_FAVORITES_PATH);
+			}
+		} catch (IOException | JsonParseException e) {
+			HandyTrader.LOGGER.warn("Failed to load global trade favorites", e);
+		}
+	}
+
+	/** Same threading contract as {@link #save()}: call from the render thread only. */
+	public static void saveGlobal() {
+		String json = GSON.toJson(globalFavorites, GLOBAL_TYPE);
+		SAVE_EXECUTOR.execute(() -> {
+			try {
+				Files.createDirectories(GLOBAL_FAVORITES_PATH.getParent());
+				Files.writeString(GLOBAL_FAVORITES_PATH, json);
+			} catch (IOException e) {
+				HandyTrader.LOGGER.warn("Failed to save global trade favorites", e);
+			}
+		});
 	}
 
 	public static void save() {

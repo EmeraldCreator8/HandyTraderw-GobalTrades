@@ -30,6 +30,13 @@ public class HandyTraderConfigScreen {
 								.controller(TickBoxControllerBuilder::create)
 								.build())
 						.option(Option.<Boolean>createBuilder()
+								.name(Component.translatable("config.handytrader.enableGlobalFavorites"))
+								.description(OptionDescription.of(
+										Component.translatable("config.handytrader.enableGlobalFavorites.desc")))
+								.binding(true, () -> config.enableGlobalFavorites, val -> config.enableGlobalFavorites = val)
+								.controller(TickBoxControllerBuilder::create)
+								.build())
+						.option(Option.<Boolean>createBuilder()
 								.name(Component.translatable("config.handytrader.enableBulkTrade"))
 								.description(OptionDescription.of(
 										Component.translatable("config.handytrader.enableBulkTrade.desc")))

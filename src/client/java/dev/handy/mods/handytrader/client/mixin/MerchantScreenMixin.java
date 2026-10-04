@@ -80,6 +80,29 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
 	@Unique private static final BookmarkPalette EMPTY_HOVER =
 			new BookmarkPalette(0x50FFD700, 0x70FFE850, 0x50B8860B);
 
+	// Global favorites (top-right corner) use emerald green so they read differently from
+	// the gold per-villager bookmark.
+	@Unique private static final BookmarkPalette GLOBAL_NORMAL =
+			new BookmarkPalette(0xFF17B34A, 0xFF5CFF8A, 0xFF0B6B2B);
+	@Unique private static final BookmarkPalette GLOBAL_HOVER =
+			new BookmarkPalette(0xFF40E070, 0xFFA0FFB8, 0xFF20A050);
+	@Unique private static final BookmarkPalette GLOBAL_EMPTY_HOVER =
+			new BookmarkPalette(0x5040E070, 0x70A0FFB8, 0x5020A050);
+
+	/** Hit test for the global-favorite corner (top-right of a trade button). */
+	@Unique
+	private static boolean handytrader$inRightCorner(double mouseX, double mouseY, int buttonX, int buttonY) {
+		int hitSize = BOOKMARK_SIZE + BOOKMARK_INSET + 1;
+		int right = buttonX + BUTTON_WIDTH;
+		return mouseX >= right - hitSize && mouseX < right
+				&& mouseY >= buttonY && mouseY < buttonY + hitSize;
+	}
+
+	@Unique
+	private static boolean handytrader$globalEnabled() {
+		return HandyTraderConfig.get().enableGlobalFavorites;
+	}
+
 	protected MerchantScreenMixin(MerchantMenu menu, Inventory playerInventory, Component title) {
 		super(menu, playerInventory, title);
 	}
@@ -203,6 +226,9 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
 					isFav = true;
 				}
 			}
+			if (!isFav && handytrader$globalEnabled() && TradeFavorites.isGlobalFavorite(hash)) {
+				isFav = true;
+			}
 			if (isFav) {
 				favoriteIndices.add(i);
 			} else {
@@ -301,6 +327,19 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
 			} else if (isCornerHovered) {
 				handytrader$drawBookmarkCorner(guiGraphics, cornerX, cornerY, EMPTY_HOVER);
 			}
+
+			// Global favorite marker, mirrored into the top-right corner.
+			if (handytrader$globalEnabled()) {
+				boolean isGlobal = TradeFavorites.isGlobalFavorite(tradeHash);
+				boolean isRightHovered = handytrader$inRightCorner(mouseX, mouseY, buttonX, buttonY);
+				int rightX = buttonX + BUTTON_WIDTH - BOOKMARK_INSET - BOOKMARK_SIZE;
+				if (isGlobal) {
+					handytrader$drawBookmarkCornerRight(guiGraphics, rightX, cornerY,
+							isRightHovered ? GLOBAL_HOVER : GLOBAL_NORMAL);
+				} else if (isRightHovered) {
+					handytrader$drawBookmarkCornerRight(guiGraphics, rightX, cornerY, GLOBAL_EMPTY_HOVER);
+				}
+			}
 		}
 	}
 
@@ -333,19 +372,30 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
 			if (offerIndex >= offers.size()) break;
 
 			int buttonY = buttonStartY + i * BUTTON_HEIGHT;
-			if (mouseX < buttonX || mouseX >= buttonX + hitSize
-					|| mouseY < buttonY || mouseY >= buttonY + hitSize) {
+			boolean inLeft = mouseX >= buttonX && mouseX < buttonX + hitSize
+					&& mouseY >= buttonY && mouseY < buttonY + hitSize;
+			boolean inRight = handytrader$globalEnabled()
+					&& handytrader$inRightCorner(mouseX, mouseY, buttonX, buttonY);
+			if (!inLeft && !inRight) {
 				continue;
 			}
 
 			MerchantOffer offer = offers.get(offerIndex);
-			boolean isFavorite = TradeFavorites.isFavorite(
-					handytrader$villagerUUID, TradeHash.hash(offer));
+			String hash = TradeHash.hash(offer);
+			boolean isVillagerFav = TradeFavorites.isFavorite(handytrader$villagerUUID, hash);
+			boolean isGlobalFav = handytrader$globalEnabled() && TradeFavorites.isGlobalFavorite(hash);
+			boolean isFavorite = isVillagerFav || isGlobalFav;
 
 			List<Component> lines = new ArrayList<>(2);
-			lines.add(Component.translatable(isFavorite
-					? "tooltip.handytrader.unfavorite"
-					: "tooltip.handytrader.favorite"));
+			if (inRight) {
+				lines.add(Component.translatable(isGlobalFav
+						? "tooltip.handytrader.globalUnfavorite"
+						: "tooltip.handytrader.globalFavorite"));
+			} else {
+				lines.add(Component.translatable(isVillagerFav
+						? "tooltip.handytrader.unfavorite"
+						: "tooltip.handytrader.favorite"));
+			}
 			// The shift-click bulk gesture applies to favorites always, and to every
 			// trade when bulkTradeAllTrades is on — hint wherever it's actually usable.
 			if (HandyTraderConfig.get().enableBulkTrade
@@ -374,6 +424,25 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
 		for (int i = 0; i < BOOKMARK_SIZE; i++) {
 			g.fill(x + BOOKMARK_SIZE - 1 - i, y + i,
 					x + BOOKMARK_SIZE - i, y + i + 1, palette.shadow());
+		}
+	}
+
+	/** Mirror of {@link #handytrader$drawBookmarkCorner}: right angle in the top-right. */
+	@Unique
+	private void handytrader$drawBookmarkCornerRight(GuiGraphicsExtractor g, int x, int y,
+												  BookmarkPalette palette) {
+		// Fill the triangle body, right-aligned
+		for (int row = 0; row < BOOKMARK_SIZE; row++) {
+			int width = BOOKMARK_SIZE - row;
+			g.fill(x + BOOKMARK_SIZE - width, y + row, x + BOOKMARK_SIZE, y + row + 1, palette.fill());
+		}
+		// Highlight: top edge
+		g.fill(x, y, x + BOOKMARK_SIZE, y + 1, palette.highlight());
+		// Highlight: right edge
+		g.fill(x + BOOKMARK_SIZE - 1, y, x + BOOKMARK_SIZE, y + BOOKMARK_SIZE, palette.highlight());
+		// Shadow: diagonal hypotenuse
+		for (int i = 0; i < BOOKMARK_SIZE; i++) {
+			g.fill(x + i, y + i, x + i + 1, y + i + 1, palette.shadow());
 		}
 	}
 
@@ -409,7 +478,9 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
 					&& mouseX >= buttonX && mouseX < buttonX + BUTTON_WIDTH
 					&& mouseY >= buttonY && mouseY < buttonY + BUTTON_HEIGHT) {
 				MerchantOffer offer = offers.get(offerIndex);
-				boolean isFav = TradeFavorites.isFavorite(handytrader$villagerUUID, TradeHash.hash(offer));
+				String bulkHash = TradeHash.hash(offer);
+				boolean isFav = TradeFavorites.isFavorite(handytrader$villagerUUID, bulkHash)
+						|| (handytrader$globalEnabled() && TradeFavorites.isGlobalFavorite(bulkHash));
 				if (isFav || HandyTraderConfig.get().bulkTradeAllTrades) {
 					handytrader$bulkTrade(offerIndex);
 					cir.setReturnValue(true);
@@ -431,6 +502,23 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
 
 				Minecraft.getInstance().player.playSound(
 						SoundEvents.AMETHYST_BLOCK_CHIME, 0.3F, 1.2F);
+
+				cir.setReturnValue(true);
+				return;
+			}
+
+			// Global corner (top-right of the button): toggles a favorite shared by all villagers.
+			if (handytrader$globalEnabled()
+					&& handytrader$inRightCorner(mouseX, mouseY, buttonX, buttonY)) {
+				MerchantOffer offer = offers.get(offerIndex);
+				TradeFavorites.toggleGlobalFavorite(TradeHash.hash(offer));
+				TradeFavorites.saveGlobal();
+
+				handytrader$needsSort = true;
+
+				// Higher pitch than the per-villager chime so the two are distinguishable.
+				Minecraft.getInstance().player.playSound(
+						SoundEvents.AMETHYST_BLOCK_CHIME, 0.3F, 1.6F);
 
 				cir.setReturnValue(true);
 				return;
